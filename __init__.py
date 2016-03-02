@@ -22,6 +22,24 @@
  This script initializes the plugin, making it known to QGIS.
 """
 
+def name():
+    return "qgis-mongodb"
+
+
+def description():
+    return "Load Points, Linestrings and Polygons from MongoDB"
+
+
+def version():
+    return "Version 1.4"
+
+
+def icon():
+    return "icon.png"
+
+
+def qgisMinimumVersion():
+    return "2.0"
 
 # noinspection PyPep8Naming
 def classFactory(iface):  # pylint: disable=invalid-name

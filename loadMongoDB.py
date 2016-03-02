@@ -176,7 +176,9 @@ class loadMongoDB:
         if geom not in self.user_details["geom"]:
             self.user_details["geom"].append(geom)
 
-        json.dump(self.user_details, open(str(os.path.abspath(__file__ + "/../../")) + "/qgis_mongodb_loader/cache.txt",'w'))
+        # test relative path
+        json.dump(self.user_details, open(str(os.path.join(os.path.dirname(__file__), "cache.txt"))))
+        # json.dump(self.user_details, open(str(os.path.abspath(__file__ + "/../../")) + "/qgis_mongodb_loader/cache.txt",'w'))
 
 
     # attempt a connection to the server when the user presses "CONNECT"
@@ -209,7 +211,8 @@ class loadMongoDB:
     def load_file_cache(self):
 
         try:
-            self.user_details = json.load(open(str(os.path.abspath(__file__ + "/../../")) + "/qgis_mongodb_loader/cache.txt"))
+            self.user_details = json.dump(self.user_details, open(str(os.path.join(os.path.dirname(__file__), "cache.txt"))))
+            # self.user_details = json.load(open(str(os.path.abspath(__file__ + "/../../")) + "/qgis_mongodb_loader/cache.txt"))
 
         except:
             self.user_details = {"geom": [], "db": [], "checkbox": False, "servers": []}
@@ -238,7 +241,8 @@ class loadMongoDB:
 
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
-        icon_path = ':/plugins/loadMongoDB/icon.png'
+        # icon_path = ':/plugins/loadMongoDB/icon.png'
+        icon_path = ':/plugins/mongodb/icon.png'
         self.add_action(
             icon_path,
             text=self.tr(u'Load MongoDb Layers'),

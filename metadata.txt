@@ -11,7 +11,7 @@ email=adrian.aksan@gmail.com
 # Optional items:
 
 # Uncomment the following line and add your changelog:
-#changelog=1.0
+# changelog=1.0
 
 about=Dependencies: pymongo, json, ast The Load MongoDB Layer plugin allows you to quickly and easily load Point, Linestring and Polygon geometry and their attributes into a shapefile. Unlike Mongoconnecter, no additional configuration is required and Polygon geometry is loadable. To load the layer simply type the your MongoDB server name, db name, geometry field name and click CONNECT. Example: my.server.com.au geos geom
 
@@ -27,4 +27,3 @@ experimental=False
 
 # deprecated flag (applies to the whole plugin, not just a single version)
 deprecated=False
-

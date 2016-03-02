@@ -1,5 +1,5 @@
 <RCC>
-    <qresource prefix="/plugins/loadMongoDB" >
+    <qresource prefix="/plugins/mongodb" >
         <file>icon.png</file>
     </qresource>
 </RCC>

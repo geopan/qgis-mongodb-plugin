@@ -309,11 +309,11 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
         # our attribute container
         self.feature = QgsFeature()
         self.feature.initAttributes(len(self.attr_list_new))
-        
+
 
         for value in self.ourList:
             #print value[self.geom_name]["type"]
-            
+
             # if the user has selected a collection with point geometry
             if value[self.geom_name]["type"] == "Point":
 
@@ -384,7 +384,7 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
                             line_string.append(QgsPoint(value[self.geom_name]["coordinates"][0][y][0], value[self.geom_name]["coordinates"][0][y][1]))
                         except:
                             print "error on %s: %s" %(str(value["_id"]), str(sys.exc_info()[0]))
-                            
+
                     poly_shape.append(line_string);
 
                     self.populate_attributes(value)
@@ -393,7 +393,7 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
                         self.feature.setGeometry(ps)
                     except:
                         print "error on %s: %s" %(str(value["_id"]), str(sys.exc_info()[0]))
-                    
+
                     (res, outFeats) = self.dataLayer.dataProvider().addFeatures([self.feature])
                     del line_string[:]
                     del poly_shape[:]
@@ -429,7 +429,7 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
                         self.feature.setGeometry(ps)
                     except:
                         print "error on %s: %s" %(str(value["_id"]), str(sys.exc_info()[0]))
-                    
+
                     (res, outFeats) = self.dataLayer.dataProvider().addFeatures([self.feature])
                     del line_string[:]
                     del poly_shape[:]
@@ -439,18 +439,12 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
 
                     self.ui.load_collection.setEnabled(False)
                     self.ui.listCol.setEnabled(False)
-                    
+
             self.ui.listCol.setEnabled(True)
 
         # commits the changes made to the layer and adds the layer to the map
         self.dataLayer.commitChanges()
-
-        # the path we will be writing to is the plugin folder dependant on the layer name
-        write_to = str(os.path.abspath(__file__ + "/../../")) + "/" + str(self.collection_name) + ".shp"
-        write_error = QgsVectorFileWriter.writeAsVectorFormat(self.dataLayer, write_to, "system", self.dataLayer.crs(), "ESRI Shapefile")
-        self.dataLayer = QgsVectorLayer(write_to, self.collection_name, "ogr")
         QgsMapLayerRegistry.instance().addMapLayer(self.dataLayer)
-
 
     # check for valid geometry
     def check_valid_geom(self, value):
@@ -519,7 +513,7 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
                     self.feature[index_pos] = smart_str(value[str(key[0][0])][str(key[1][0])])
                     index_pos +=1
                 except:
-                    index_pos +=1    
+                    index_pos +=1
 
             else:
                 pass

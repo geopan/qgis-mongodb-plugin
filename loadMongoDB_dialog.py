@@ -229,6 +229,7 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
         self.geometry_name = str(item.text(1))
         # divide the collection count to percentages for the progress bar
         self.percent = 100/float(item.text(2))
+        self.total = int(item.text(2))
 
         # load the selected collection into a list
         self.collection = self.db[self.collection_name]
@@ -241,8 +242,10 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
     def on_click_load(self):
 
         # default value of the progress bar is set to 0
-        self.counter = 0
+        self.counter = 1
         self.ui.progressBar.setValue(self.counter)
+        self.ui.progressBar.setMinimum(1)
+        self.ui.progressBar.setMaximum(self.total)
 
         # check if the user wants to limit the selection by distinct value
         if self.ui.checkBox.isChecked():
@@ -269,50 +272,18 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
             if (type(self.single_return[key]) is dict):
                 continue
             if (type(self.single_return[key]) is list):
-                dtype = QVariant.List
+                dtype = QVariant.StringList
             if (type(self.single_return[key]) is int):
                 dtype = QVariant.Int
             elif (type(self.single_return[key]) is float):
                 dtype = QVariant.Double
             else:
                 dtype = QVariant.String
+
+            # define the attribute dictionnary
             # add a dictionary of attribute name and type
             self.attributes.append({"name": str(key), "dtype": dtype, "value": key})
 
-        # list defined for the attributes table
-        # self.attr_list_new = []
-        # list defined for structural access to tables
-
-        # locate the sub attributes and store them in sub_attr_list
-        # for attr in self.attr_list:
-
-        '''self.attr_list_structure = []
-
-        for attr in self.keys:
-
-            # append keys from the first layer
-            self.attr_list_new.append(str(attr))
-            self.attr_list_structure.append([attr])
-
-            # if the key is a dictionary
-            if type(self.single_return[attr]) is dict:
-
-                # find all of the sub keys in the dictionary
-                sub_keys_list = self.single_return[attr].keys()
-
-                # search through the list of sub keys
-                for sub_key in sub_keys_list:
-
-                    # structural code for ease of access later
-                    struct_sub = [attr],[sub_key]
-
-                    # append the sub keys to our main list, define differences
-                    self.attr_list_new.append(str(attr) + "." + str(sub_key))
-                    # create a structure for ease of access
-                    self.attr_list_structure.append(struct_sub)
-
-            else:
-                pass'''
 
         # define the dataLayer type as either Point, LineString or Polygon
         self.dataLayer = QgsVectorLayer(self.geometry_name + '?crs=EPSG:4326', self.collection_name, "memory")
@@ -331,38 +302,35 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
         self.feature = QgsFeature()
         self.feature.initAttributes(len(self.attributes))
 
-
         for value in self.ourList:
-            #print value[self.geom_name]["type"]
 
             # if the user has selected a collection with point geometry
-            if value[self.geom_name]["type"] == "Point":
 
-                x_coord = value[self.geom_name]["coordinates"][0]
-                y_coord = value[self.geom_name]["coordinates"][1]
+            geom = value[self.geom_name]
+
+            if geom["type"] == "Point":
+
+                x_coord = geom["coordinates"][0]
+                y_coord = geom["coordinates"][1]
 
                 self.populate_attributes(value)
 
                 self.feature.setGeometry(QgsGeometry.fromPoint(QgsPoint(x_coord, y_coord)))
                 (res, outFeats) = self.dataLayer.dataProvider().addFeatures([self.feature])
 
-                # update the progress bar
-                self.event_progress()
-
                 self.ui.load_collection.setEnabled(False)
                 self.ui.listCol.setEnabled(False)
 
 
-            if value[self.geom_name]["type"] == "LineString":
+            if geom["type"] == "LineString":
 
                 # used to store a list of poly lines
                 line_string = []
-                print value[self.geom_name]["type"]
 
                 # checks the geometry and only imports valid geometry
                 if self.check_valid_geom(value):
 
-                    for y in range(len(value[self.geom_name]["coordinates"])):
+                    for y in range(len(geom["coordinates"])):
 
                         # do not use unless needed, in case there is a multiLineString Object in the DB
                         """
@@ -373,7 +341,7 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
                         """
 
                         try:
-                            line_string.append(QgsPoint(value[self.geom_name]["coordinates"][y][0], value[self.geom_name]["coordinates"][y][1]))
+                            line_string.append(QgsPoint(geom["coordinates"][y][0], geom["coordinates"][y][1]))
                         except:
                             print "error on %s: %s" %(str(value["_id"]), str(sys.exc_info()[0]))
 
@@ -382,15 +350,12 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
                     (res, outFeats) = self.dataLayer.dataProvider().addFeatures([self.feature])
                     del line_string[:]
 
-                    # update the progress bar
-                    self.event_progress()
-
                 self.ui.load_collection.setEnabled(False)
                 self.ui.listCol.setEnabled(False)
 
 
             # this deals with Polygon geometry
-            if value[self.geom_name]["type"] == "Polygon":
+            if geom["type"] == "Polygon":
 
                 # store the polygon points
                 poly_shape = []
@@ -400,9 +365,9 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
                 # checks the geometry and only imports valid geometry
                 if self.check_valid_geom(value):
 
-                    for y in range(len(value[self.geom_name]["coordinates"][0])):
+                    for y in range(len(geom["coordinates"][0])):
                         try:
-                            line_string.append(QgsPoint(value[self.geom_name]["coordinates"][0][y][0], value[self.geom_name]["coordinates"][0][y][1]))
+                            line_string.append(QgsPoint(geom["coordinates"][0][y][0], geom["coordinates"][0][y][1]))
                         except:
                             print "error on %s: %s" %(str(value["_id"]), str(sys.exc_info()[0]))
 
@@ -419,14 +384,11 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
                     del line_string[:]
                     del poly_shape[:]
 
-                    # update the progress bar
-                    self.event_progress()
-
                     self.ui.load_collection.setEnabled(False)
                     self.ui.listCol.setEnabled(False)
 
             # this deals with Polygon geometry
-            if value[self.geom_name]["type"] == "MultiPolygon":
+            if geom["type"] == "MultiPolygon":
 
                 # store the polygon points
                 poly_shape = []
@@ -436,10 +398,10 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
                 # checks the geometry and only imports valid geometry
                 if self.check_valid_geom(value):
 
-                    for polys in range(len(value[self.geom_name]["coordinates"])):
-                        for y in range(len(value[self.geom_name]["coordinates"][polys])):
+                    for polys in range(len(geom["coordinates"])):
+                        for y in range(len(geom["coordinates"][polys])):
                             try:
-                                line_string.append(QgsPoint(value[self.geom_name]["coordinates"][polys][y][0], value[self.geom_name]["coordinates"][polys][y][1]))
+                                line_string.append(QgsPoint(geom["coordinates"][polys][y][0], geom["coordinates"][polys][y][1]))
                             except:
                                 print "error on %s: %s" %(str(value["_id"]), str(sys.exc_info()[0]))
                         poly_shape.append(line_string);
@@ -455,11 +417,11 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
                     del line_string[:]
                     del poly_shape[:]
 
-                    # update the progress bar
-                    self.event_progress()
-
                     self.ui.load_collection.setEnabled(False)
                     self.ui.listCol.setEnabled(False)
+
+            # update the progress bar
+            self.event_progress()
 
             self.ui.listCol.setEnabled(True)
 
@@ -472,11 +434,15 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
 
         if value.has_key(self.geom_name):
 
-            if value[self.geom_name].has_key("coordinates"):
+            if value[self.geom_name].has_key("type"):
 
-                if len(value[self.geom_name]["coordinates"]) != 0:
+                if value[self.geom_name].has_key("coordinates"):
 
-                    return True
+                    if len(value[self.geom_name]["coordinates"]) != 0:
+
+                        return True
+
+                return False
 
             return False
 
@@ -486,15 +452,18 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
     def event_progress(self):
 
         # convert to an integer for the progress bar
-        self.counter = self.counter + self.percent
-        self.step = int(self.counter) +1
+        # self.counter = self.counter + self.percent
+        # self.step = int(self.counter) +1
+
+        self.step = self.ui.progressBar.value() + 1
 
         # set the updated values in the progress bar and process the event
         self.ui.progressBar.setValue(self.step)
         QApplication.processEvents()
 
         # once the upload has finished, reset the progress back to 0
-        if self.step >= 100:
+        # if self.step >= 100:
+        if self.step >= self.total:
             self.ui.progressBar.setValue(0)
 
 
@@ -505,7 +474,6 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
 
         for attr in self.attributes:
 
-            # self.feature[index_pos] = str(value[str(key[0])])
             try:
                 self.feature[index_pos] = value[attr["name"]]
             except:

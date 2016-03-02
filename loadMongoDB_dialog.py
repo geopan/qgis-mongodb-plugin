@@ -259,17 +259,36 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
             self.ourList = self.collection.find()
 
         # get the first level of attributes, we can modify which fields we want to use
-        self.single_return = self.collection.find_one({}, {'geom':0, 'fibres': 0, 'date': 0})
+        self.single_return = self.collection.find_one({}, {'geom':0})
         #{} , {"geom": 1}
-        self.attr_list = self.single_return.keys()
+        self.keys = self.single_return.keys()
+
+        self.attributes = []
+
+        for key in self.keys:
+            if (type(self.single_return[key]) is dict):
+                continue
+            if (type(self.single_return[key]) is list):
+                dtype = QVariant.List
+            if (type(self.single_return[key]) is int):
+                dtype = QVariant.Int
+            elif (type(self.single_return[key]) is float):
+                dtype = QVariant.Double
+            else:
+                dtype = QVariant.String
+            # add a dictionary of attribute name and type
+            self.attributes.append({"name": str(key), "dtype": dtype, "value": key})
 
         # list defined for the attributes table
-        self.attr_list_new = []
+        # self.attr_list_new = []
         # list defined for structural access to tables
-        self.attr_list_structure = []
 
         # locate the sub attributes and store them in sub_attr_list
-        for attr in self.attr_list:
+        # for attr in self.attr_list:
+
+        '''self.attr_list_structure = []
+
+        for attr in self.keys:
 
             # append keys from the first layer
             self.attr_list_new.append(str(attr))
@@ -293,7 +312,7 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
                     self.attr_list_structure.append(struct_sub)
 
             else:
-                pass
+                pass'''
 
         # define the dataLayer type as either Point, LineString or Polygon
         self.dataLayer = QgsVectorLayer(self.geometry_name + '?crs=EPSG:4326', self.collection_name, "memory")
@@ -302,13 +321,15 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
         self.dataLayer.startEditing()
         self.layerData = self.dataLayer.dataProvider()
 
-        # create the shapefile attributes based on existing mongoDB field
-        for attribute in (self.attr_list_new):
-            self.layerData.addAttributes([ QgsField(attribute, QVariant.String)])
+        # create the attributes based on existing mongoDB field
+        # setup the type of each field
+        # for attribute in (self.attr_list_new):
+        for attr in (self.attributes):
+            self.layerData.addAttributes([ QgsField(attr["name"], attr["dtype"])])
 
         # our attribute container
         self.feature = QgsFeature()
-        self.feature.initAttributes(len(self.attr_list_new))
+        self.feature.initAttributes(len(self.attributes))
 
 
         for value in self.ourList:
@@ -482,38 +503,12 @@ class loadMongoDBDialog(QtGui.QDialog, FORM_CLASS):
 
         index_pos = 0
 
-        for key in self.attr_list_structure:
+        for attr in self.attributes:
 
-            if len(key) is 1:
+            # self.feature[index_pos] = str(value[str(key[0])])
+            try:
+                self.feature[index_pos] = value[attr["name"]]
+            except:
+                self.feature[index_pos] = None
 
-                # this caters for the new data model where the status is a subkey
-                if key[0] == "status":
-
-                    try:
-                        stat_list = list(value[str(key[0])])
-                        formatted = stat_list[-1]["label"]
-
-                        self.feature[index_pos] = str(formatted)
-                    except:
-                        pass
-
-                    index_pos += 1
-
-                else:
-
-                    try:
-                        self.feature[index_pos] = str(value[str(key[0])])
-                        index_pos += 1
-
-                    except:
-                        index_pos += 1
-
-            elif len(key) is 2:
-                try:
-                    self.feature[index_pos] = smart_str(value[str(key[0][0])][str(key[1][0])])
-                    index_pos +=1
-                except:
-                    index_pos +=1
-
-            else:
-                pass
+            index_pos += 1
